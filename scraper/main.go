@@ -6,9 +6,15 @@ import (
 	"log"
 	"os"
 	"strconv"
-
+	"sync"
 	"github.com/gocolly/colly"
 )
+
+func scrapPage(i int, wg *sync.WaitGroup, c *colly.Collector) {
+	fmt.Printf("Scraping Page: %d\n", i)
+	c.Visit("https://www.metacritic.com/browse/movies/score/metascore/all/filtered/netflix?page=" + strconv.Itoa(i))
+	wg.Done()
+}
 
 func main() {
 	fName := "data.csv"
@@ -34,11 +40,17 @@ func main() {
 			e.ChildText("summary"),
 		})
 	})
-	for i := 0; i < 11; i++ {
-		fmt.Printf("Scraping Page: %d\n", i)
 
-		c.Visit("https://www.metacritic.com/browse/movies/score/metascore/all/filtered/netflix?page=" + strconv.Itoa(i))
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(11)
+
+	for i := 0; i < 11; i++ {
+		go scrapPage(i, &waitGroup, c)
+		// agora vai ser em paralelo
 	}
+
+	waitGroup.Wait()
+
 	log.Printf("Scraping Completo")
 	log.Println(c)
 }
