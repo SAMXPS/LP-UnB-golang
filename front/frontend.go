@@ -4,59 +4,32 @@ package main
 
 import (
 	"html/template"
-	"io/ioutil"
+	_"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 )
 
-type Page struct {
-	Title string
-	Body  []byte
-}
 
-func loadPage(title string) (*Page, error) {
-	filename := title + ".txt"
-	body, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	return &Page{Title: title, Body: body}, nil
-}
+var validPath = regexp.MustCompile("^/([a-zA-Z0-9]+)$")
 
-func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
-		return
-	}
-	renderTemplate(w, "view", p)
-}
-
-var templates = template.Must(template.ParseFiles("view.html"))
-
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
-
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+func makeHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := validPath.FindStringSubmatch(r.URL.Path)
 		if m == nil {
-			http.NotFound(w, r)
+			http.Redirect(w, r, "/index", 302)
 			return
 		}
-		fn(w, r, m[2])
+		var pages = template.Must(template.ParseFiles("pages/index.html"))
+		err := pages.ExecuteTemplate(w, m[1]+".html", "data")
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
 
 func main() {
-	http.HandleFunc("/view/", makeHandler(viewHandler))
-
+	http.HandleFunc("/", makeHandler())
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
