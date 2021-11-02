@@ -24,16 +24,20 @@ func scrapPage2(i int, wg *sync.WaitGroup, c2 *colly.Collector) {
 	wg.Done()
 }
 
-func scrapPage3(i int, wg *sync.WaitGroup, c3 *colly.Collector) {
-	fmt.Printf("Scraping Page: %d\n", i)
-	c3.Visit("https://www.rottentomatoes.com/browse/dvd-streaming-all" + strconv.Itoa(i))
+//func scrapPage3(i int, wg *sync.WaitGroup, c3 *colly.Collector) {
+//	fmt.Printf("Scraping Page: %d\n", i)
+//	c3.Visit("https://www.rottentomatoes.com/browse/dvd-streaming-all" + strconv.Itoa(i))
 
-	wg.Done()
-}
+//	wg.Done()
+//}
 
 func main() {
 	fName := "data.csv"
 	file, err := os.Create(fName)
+	//var rows [][]string
+	var termo_pesquisa = "magic"
+	var pesquisa = "https://www.metacritic.com/search/all/" + termo_pesquisa + "/results"
+
 	if err != nil {
 		log.Fatalf("Erro ao criar arquivo, err: %q", err)
 		return
@@ -74,7 +78,8 @@ func main() {
 	)
 
 	c3 := colly.NewCollector(
-		colly.AllowedDomains("www.rottentomatoes.com"),
+		//colly.AllowedDomains("www.rottentomatoes.com"),
+		colly.AllowedDomains("www.metacritic.com"),
 	)
 
 	c.OnHTML(".clamp-summary-wrap", func(e *colly.HTMLElement) {
@@ -95,17 +100,24 @@ func main() {
 		})
 	})
 
-	c3.OnHTML(".mb_info", func(e *colly.HTMLElement) {
-		writer3.Write([]string{
-			//e.ChildText("a"),
+	//c3.OnHTML(".mb_info", func(e *colly.HTMLElement) {
+	//	writer3.Write([]string{
+	//e.ChildText("a"),
 
+	//		e.ChildText("a"),
+	//		e.ChildText("span"),
+	//e.ChildText("consensus"),
+	//e.ChildText("div"),
+	//	})
+	//})
+	c3.OnHTML(".main_stats", func(e *colly.HTMLElement) {
+		writer3.Write([]string{
+			e.ChildText(".metascore_w"),
 			e.ChildText("a"),
-			e.ChildText("span"),
-			//e.ChildText("consensus"),
-			//e.ChildText("div"),
+			//fmt.Println(string(e.Text))
+			//rows = append(rows, []string{string(titulo), string(nota)})
 		})
 	})
-
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(11)
 
@@ -127,16 +139,18 @@ func main() {
 	}
 	waitGroup2.Wait()
 
-	var waitGroup3 sync.WaitGroup
-	waitGroup3.Add(11)
-	for i := 0; i < 11; i++ {
+	//var waitGroup3 sync.WaitGroup
+	//waitGroup3.Add(11)
+	//for i := 0; i < 11; i++ {
 
-		go scrapPage2(i, &waitGroup3, c3)
+	//	go scrapPage2(i, &waitGroup3, c3)
 
-	}
-	waitGroup3.Wait()
+	//}
+	//waitGroup3.Wait()
+	log.Printf("Scraping Dune")
+	c3.Visit(pesquisa)
 
-	log.Printf("Scraping Completo 13")
+	log.Printf("Scraping Completo")
 	log.Println(c)
 	log.Println(c2)
 	log.Println(c3)
