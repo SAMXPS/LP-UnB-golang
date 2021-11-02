@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/gocolly/colly"
@@ -35,8 +36,14 @@ func main() {
 	fName := "data.csv"
 	file, err := os.Create(fName)
 	//var rows [][]string
-	var termo_pesquisa = "magic"
-	var pesquisa = "https://www.metacritic.com/search/all/" + termo_pesquisa + "/results"
+	var termo_pesquisa = "dune"
+	//var pesquisa = "https://www.metacritic.com/search/all/" + termo_pesquisa + "/results"
+	termo_pesquisa_adaptada := strings.ReplaceAll(termo_pesquisa, " ", "+")
+	termo_pesquisa_adaptada2 := strings.ReplaceAll(termo_pesquisa, " ", "%20")
+	var pesquisa_meta = "https://www.metacritic.com/search/movie/" + termo_pesquisa_adaptada2 + "/results"
+	var pesquisa_rotten = "https://www.rottentomatoes.com/search?search=" + termo_pesquisa_adaptada2
+
+	pesquisa_letter := "https://letterboxd.com/search/films/" + termo_pesquisa_adaptada + "/"
 
 	if err != nil {
 		log.Fatalf("Erro ao criar arquivo, err: %q", err)
@@ -60,6 +67,22 @@ func main() {
 	}
 	defer file3.Close()
 
+	fName4 := "data4.csv"
+	file4, err := os.Create(fName4)
+	if err != nil {
+		log.Fatalf("Erro ao criar arquivo, err: %q", err)
+		return
+	}
+	defer file4.Close()
+
+	fName5 := "data5.csv"
+	file5, err := os.Create(fName5)
+	if err != nil {
+		log.Fatalf("Erro ao criar arquivo, err: %q", err)
+		return
+	}
+	defer file5.Close()
+
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
@@ -68,6 +91,12 @@ func main() {
 
 	writer3 := csv.NewWriter(file3)
 	defer writer3.Flush()
+
+	writer4 := csv.NewWriter(file4)
+	defer writer4.Flush()
+
+	writer5 := csv.NewWriter(file5)
+	defer writer5.Flush()
 
 	c := colly.NewCollector(
 		colly.AllowedDomains("www.metacritic.com"),
@@ -80,6 +109,16 @@ func main() {
 	c3 := colly.NewCollector(
 		//colly.AllowedDomains("www.rottentomatoes.com"),
 		colly.AllowedDomains("www.metacritic.com"),
+	)
+
+	c4 := colly.NewCollector(
+		//colly.AllowedDomains("www.rottentomatoes.com"),
+		colly.AllowedDomains("www.rottentomatoes.com"),
+	)
+
+	c5 := colly.NewCollector(
+		//colly.AllowedDomains("www.rottentomatoes.com"),
+		colly.AllowedDomains("letterboxd.com"),
 	)
 
 	c.OnHTML(".clamp-summary-wrap", func(e *colly.HTMLElement) {
@@ -118,6 +157,23 @@ func main() {
 			//rows = append(rows, []string{string(titulo), string(nota)})
 		})
 	})
+	// Rotten html
+	c4.OnHTML("ul search-page-media-row", func(e *colly.HTMLElement) {
+		writer4.Write([]string{
+			e.ChildAttr("score-icon-critic", "percentage"),
+			e.ChildText("a"),
+		})
+
+	})
+
+	c5.OnHTML(".film-detail-content", func(e *colly.HTMLElement) {
+		writer5.Write([]string{
+			e.ChildText("a href"),
+			e.ChildText(".film-title-wrapper"),
+		})
+
+	})
+
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(11)
 
@@ -147,11 +203,14 @@ func main() {
 
 	//}
 	//waitGroup3.Wait()
-	log.Printf("Scraping Dune")
-	c3.Visit(pesquisa)
+	log.Printf("Scraping " + termo_pesquisa)
+	c3.Visit(pesquisa_meta)
+	c4.Visit(pesquisa_rotten)
+	c5.Visit(pesquisa_letter)
 
 	log.Printf("Scraping Completo")
 	log.Println(c)
 	log.Println(c2)
 	log.Println(c3)
+	log.Println(c4)
 }
