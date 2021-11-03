@@ -81,6 +81,7 @@ func configurarContexto(context *scrap_context) {
 		(*context).writers[2].Write([]string{
 			e.ChildText(".metascore_w"),
 			e.ChildText("a"),
+			e.Request.URL.Scheme + "://" + e.Request.URL.Host + e.ChildAttr("a", "href"),
 		})
 	})
 
@@ -89,6 +90,7 @@ func configurarContexto(context *scrap_context) {
 		(*context).writers[3].Write([]string{
 			e.ChildAttr("score-icon-critic", "percentage"),
 			e.ChildText("a"),
+			e.ChildAttr("a", "href"),
 		})
 	})
 
@@ -97,6 +99,7 @@ func configurarContexto(context *scrap_context) {
 		(*context).writers[4].Write([]string{
 			e.ChildText("a href"),
 			e.ChildText(".film-title-wrapper"),
+			e.Request.URL.Scheme + "://" + e.Request.URL.Host + e.ChildAttr("a", "href"),
 		})
 	})
 }
@@ -135,6 +138,8 @@ func realizarPesquisaParalelo(termo_pesquisa string, context *scrap_context, wai
 	go realizarPesquisaIndividual(wait_group, context.colly_meta, pesquisa_meta)
 	go realizarPesquisaIndividual(wait_group, context.colly_rotten, pesquisa_rotten)
 	go realizarPesquisaIndividual(wait_group, context.colly_letter, pesquisa_letter)
+
+	wait_group.Done()
 }
 
 // Função que faz scraping e monta banco de dados de melhores filmes
@@ -144,6 +149,7 @@ func montarDatabase(context *scrap_context, wait_group *sync.WaitGroup) {
 		go realizarScrapMetacritic(i, wait_group, context.colly_meta)
 		go realizarScrapImdb(i, wait_group, context.colly_imdb)
 	}
+	wait_group.Done()
 }
 
 // Função para fechar writers e arquivos
@@ -154,22 +160,24 @@ func encerrarContext(context *scrap_context) {
 	}
 }
 
-func executarScraping(termo_pesquisa string) {
+func executarScraping(termo_pesquisa string, wait_group *sync.WaitGroup) {
 	context, err := criarContexto()
 	if err != nil {
 		return
 	} else {
-		var wait_group sync.WaitGroup
-
 		// Criamos o contexto de scraping
 		configurarContexto(context)
 
+		wait_group.Add(2)
+
 		// Rodamos as tarefas pendentes
-		go realizarPesquisaParalelo(termo_pesquisa, context, &wait_group)
-		go montarDatabase(context, &wait_group)
+		go realizarPesquisaParalelo(termo_pesquisa, context, wait_group)
+		go montarDatabase(context, wait_group)
 
 		// Esperamos todas as tarefas finalizarem
 		wait_group.Wait()
+
+		fmt.Printf("Fim do scrap!")
 
 		// Encerramos o contexto de scraping
 		encerrarContext(context)
