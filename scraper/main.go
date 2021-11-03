@@ -13,8 +13,8 @@ import (
 
 // Struct de contexto para scraping
 type scrap_context struct {
-	colly_meta 	    *colly.Collector    // Scraper do website metacritc 
-    colly_imdb 		*colly.Collector    // Scraper do website IMBD
+    colly_meta      *colly.Collector    // Scraper do website metacritc 
+    colly_imdb      *colly.Collector    // Scraper do website IMBD
     colly_rotten    *colly.Collector    // Scraper do website rottentomatoes
     colly_letter    *colly.Collector    // Scraper do website letterboxd
     files           [5]*os.File         // Arquivos temporários CSV
@@ -36,7 +36,7 @@ func criarContexto() (*scrap_context, error){
         }
         writers[i] = csv.NewWriter(file)
         files[i] = file
-	}
+    }
 
     // Inicializamos os scrapers
     context := scrap_context{
@@ -102,15 +102,15 @@ func configurarContexto(context *scrap_context) {
 
 // Função que faz scraping de página do Metacritic
 func realizarScrapMetacritic(i int, wg *sync.WaitGroup, c *colly.Collector) {
-	fmt.Printf("Scraping Page: %d\n", i)
-	c.Visit("https://www.metacritic.com/browse/movies/score/metascore/all/filtered/netflix?page=" + strconv.Itoa(i))
-	wg.Done()
+    fmt.Printf("Scraping Page: %d\n", i)
+    c.Visit("https://www.metacritic.com/browse/movies/score/metascore/all/filtered/netflix?page=" + strconv.Itoa(i))
+    wg.Done()
 }
 
 // Funçao que faz scraping de página do IMDB
 func realizarScrapImdb(i int, wg *sync.WaitGroup, c2 *colly.Collector) {
-	fmt.Printf("Scraping Page: %d\n", i)
-	c2.Visit("https://www.imdb.com/search/title/?count=100&groups=top_1000&sort=user_rating" + strconv.Itoa(i))
+    fmt.Printf("Scraping Page: %d\n", i)
+    c2.Visit("https://www.imdb.com/search/title/?count=100&groups=top_1000&sort=user_rating" + strconv.Itoa(i))
     wg.Done()
 }
 
@@ -138,11 +138,11 @@ func realizarPesquisaParalelo(termo_pesquisa string, context *scrap_context, wai
 
 // Função que faz scraping e monta banco de dados de melhores filmes
 func montarDatabase(context *scrap_context, wait_group *sync.WaitGroup) {
-	for i := 0; i < 11; i++ {
+    for i := 0; i < 11; i++ {
         wait_group.Add(2)
-		go realizarScrapMetacritic(i, &wait_group, context.colly_meta)
-		go realizarScrapImdb(i, &waitGroup, context.colly_imdb)
-	}
+        go realizarScrapMetacritic(i, &wait_group, context.colly_meta)
+        go realizarScrapImdb(i, &waitGroup, context.colly_imdb)
+    }
 }
 
 // Função para fechar writers e arquivos
