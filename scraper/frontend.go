@@ -4,12 +4,11 @@ package main
 
 import (
 	"html/template"
-	_"io/ioutil"
+	_ "io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 )
-
 
 var validPath = regexp.MustCompile("^/([a-zA-Z0-9]+)$")
 
@@ -21,7 +20,18 @@ func makeHandler() http.HandlerFunc {
 			return
 		}
 		var pages = template.Must(template.ParseFiles("pages/index.html"))
-		err := pages.ExecuteTemplate(w, m[1]+".html", "data")
+		var pageName = m[1]
+
+		if pageName == "index" {
+			r.ParseForm()
+			var filmes = r.Form["filme"]
+			if filmes != nil {
+				var search = filmes[0]
+				executarScraping(search)
+			}
+		}
+
+		err := pages.ExecuteTemplate(w, pageName+".html", "data")
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
